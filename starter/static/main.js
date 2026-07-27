@@ -1,9 +1,11 @@
 const SIZE = 9;
 const LEADERBOARD_STORAGE_KEY = 'sudoku-fastest-times';
+const THEME_STORAGE_KEY = 'sudoku-theme';
 const MAX_LEADERBOARD_ENTRIES = 10;
 let puzzle = [];
 let timerInterval = null;
 let secondsElapsed = 0;
+let hintsUsed = 0;
 let gameCompleted = false;
 
 function getBoardElement() {
@@ -66,6 +68,7 @@ function renderLeaderboard() {
           <th>#</th>
           <th>Player Name</th>
           <th>Time</th>
+          <th>Hints</th>
           <th>Difficulty</th>
           <th>Date</th>
         </tr>
@@ -76,6 +79,7 @@ function renderLeaderboard() {
             <td data-label="#">${index + 1}</td>
             <td data-label="Player Name">${entry.playerName}</td>
             <td data-label="Time">${entry.time}</td>
+            <td data-label="Hints">${entry.hintsUsed || 0}</td>
             <td data-label="Difficulty">${entry.difficulty}</td>
             <td data-label="Date">${new Date(entry.completedAt).toLocaleDateString()}</td>
           </tr>
@@ -95,6 +99,7 @@ function recordLeaderboardEntry(difficulty, totalSeconds) {
     difficulty,
     seconds: totalSeconds,
     time: formatTime(totalSeconds),
+    hintsUsed,
     completedAt: new Date().toISOString()
   };
 
@@ -113,6 +118,65 @@ function applyCellState(input, isPrefilled, isIncorrect = false) {
   input.classList.remove('prefilled', 'incorrect');
   if (isPrefilled) input.classList.add('prefilled');
   if (isIncorrect) input.classList.add('incorrect');
+}
+
+function validateCellConflict(cellInput) {
+  const row = parseInt(cellInput.dataset.row, 10);
+  const col = parseInt(cellInput.dataset.col, 10);
+  const value = cellInput.value.trim();
+
+  if (!value || value === '') {
+    cellInput.classList.remove('invalid');
+    return;
+  }
+
+  const cellNum = parseInt(value, 10);
+  if (cellNum < 1 || cellNum > 9) {
+    cellInput.classList.remove('invalid');
+    return;
+  }
+
+  const inputs = document.querySelectorAll('.sudoku-cell');
+  let hasConflict = false;
+
+  inputs.forEach((inp) => {
+    const inputRow = parseInt(inp.dataset.row, 10);
+    const inputCol = parseInt(inp.dataset.col, 10);
+    const inputValue = inp.value.trim();
+
+    if (!inputValue || inp === cellInput) return;
+
+    const inputNum = parseInt(inputValue, 10);
+    if (isNaN(inputNum)) return;
+
+    // Check row conflict
+    if (inputRow === row && inputNum === cellNum) {
+      hasConflict = true;
+      return;
+    }
+
+    // Check column conflict
+    if (inputCol === col && inputNum === cellNum) {
+      hasConflict = true;
+      return;
+    }
+
+    // Check 3x3 box conflict
+    const boxRow = Math.floor(row / 3);
+    const boxCol = Math.floor(col / 3);
+    const inputBoxRow = Math.floor(inputRow / 3);
+    const inputBoxCol = Math.floor(inputCol / 3);
+
+    if (boxRow === inputBoxRow && boxCol === inputBoxCol && inputNum === cellNum) {
+      hasConflict = true;
+    }
+  });
+
+  if (hasConflict) {
+    cellInput.classList.add('invalid');
+  } else {
+    cellInput.classList.remove('invalid');
+  }
 }
 
 function createBoardElement() {
@@ -134,6 +198,7 @@ function createBoardElement() {
       input.addEventListener('input', (e) => {
         const val = e.target.value.replace(/[^1-9]/g, '');
         e.target.value = val;
+        validateCellConflict(e.target);
       });
 
       rowDiv.appendChild(input);
@@ -146,6 +211,7 @@ function createBoardElement() {
 function renderPuzzle(puz) {
   puzzle = puz;
   gameCompleted = false;
+  hintsUsed = 0;
   createBoardElement();
 
   const inputs = document.querySelectorAll('.sudoku-cell');
@@ -157,6 +223,7 @@ function renderPuzzle(puz) {
 
     inp.value = val !== 0 ? String(val) : '';
     inp.disabled = val !== 0;
+    inp.classList.remove('invalid');
 
     applyCellState(inp, val !== 0, false);
   });
@@ -262,13 +329,39 @@ async function getHint() {
   if (data.value) {
     target.inp.value = data.value;
     target.inp.disabled = true;
+    hintsUsed++;
     applyCellState(target.inp, true, false);
   }
 }
 
+function initTheme() {
+  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+  applyTheme(isDark);
+}
+
+function applyTheme(isDark) {
+  if (isDark) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem(THEME_STORAGE_KEY, 'light');
+  }
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  const isDark = currentTheme === 'dark';
+  applyTheme(!isDark);
+}
+
 window.addEventListener('load', () => {
+  initTheme();
   renderLeaderboard();
   document.getElementById('new-game')?.addEventListener('click', newGame);
   document.getElementById('check-solution')?.addEventListener('click', checkSolution);
   document.getElementById('hint-btn')?.addEventListener('click', getHint);
+  document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
 });
