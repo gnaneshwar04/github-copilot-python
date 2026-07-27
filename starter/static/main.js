@@ -364,4 +364,6 @@ window.addEventListener('load', () => {
   document.getElementById('check-solution')?.addEventListener('click', checkSolution);
   document.getElementById('hint-btn')?.addEventListener('click', getHint);
   document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+  // Auto-start a game so the board is visible immediately
+  newGame();
 });
