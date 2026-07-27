@@ -1,18 +1,59 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sudoku Game</title>
-  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-  <h1>Sudoku Game</h1>
-  <div id="sudoku-board"></div>
-  <div class="controls">
-    <button id="new-game">New Game</button>
-    <button id="check-solution">Check Solution</button>
-    <span id="message"></span>
-  </div>
-  <script src="/static/main.js"></script>
+  <main class="app-shell">
+    <header class="page-header">
+      <h1>Sudoku Game</h1>
+      <p class="subtitle">Pick a difficulty, solve the puzzle, and beat your best time.</p>
+    </header>
+
+    <section class="toolbar" aria-label="Game controls">
+      <label class="field" for="difficulty-select">
+        <span>Difficulty:</span>
+        <select id="difficulty-select">
+          <option value="Easy">Easy</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+      </label>
+
+      <label class="player-field" for="player-name">
+        <span>Player</span>
+        <input id="player-name" type="text" maxlength="20" placeholder="Your name" autocomplete="off">
+      </label>
+
+      <div class="status-strip">
+        <div id="timer" class="timer" aria-live="polite">00:00</div>
+        <div id="message" class="message" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="game-layout">
+      <div class="board-card">
+        <div id="sudoku-board" class="sudoku-board" aria-label="Sudoku board"></div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="controls">
+          <button id="new-game">New Game</button>
+          <button id="check-solution">Check Solution</button>
+          <button id="hint-btn">Hint</button>
+        </div>
+
+        <div class="leaderboard-card">
+          <h2>Top 10 Leaderboard</h2>
+          <div id="leaderboard"></div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='main.js') }}"></script>
 </body>
 </html>
